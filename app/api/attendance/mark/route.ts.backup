@@ -1,0 +1,236 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { supabase } from '@/lib/supabase'
+
+export async function POST(request: NextRequest) {
+  try {
+    const { email, studentId, sessionId, sessionCode } = await request.json()
+
+    // Validate input - accept either email or studentId
+    if ((!email && !studentId) || !sessionId || !sessionCode) {
+      return NextResponse.json(
+        { error: 'Email or Student ID, session ID, and session code are required' },
+        { status: 400 }
+      )
+    }
+
+    // If email provided, find student in students table (admin-added students)
+    let finalStudentId = studentId
+    
+    if (email && !studentId) {
+      console.log('📧 Finding student for email:', email)
+      const emailLower = email.toLowerCase()
+      
+      // STEP 1: Check if student exists in students table (admin-added students)
+      console.log('🔍 Checking students table first...')
+      const { data: existingStudent } = await supabase
+        .from('students')
+        .select('*')
+        .eq('email', emailLower)
+        .maybeSingle()
+
+      if (existingStudent) {
+        console.log('✅ Student found in students table:', existingStudent.id)
+        finalStudentId = existingStudent.id
+      } else {
+        // STEP 2: Check if user exists in users table (fallback)
+        console.log('🔍 Not in students table, checking users table...')
+        const { data: existingUser } = await supabase
+          .from('users')
+          .select('*')
+          .eq('email', emailLower)
+          .maybeSingle()
+
+        if (existingUser) {
+          console.log('✅ User found in users table:', existingUser.id)
+          // Create a student record for this user
+          console.log('📝 Creating student record from user...')
+          const { data: newStudent, error: studentError } = await supabase
+            .from('students')
+            .insert({
+              student_id: existingUser.email.split('@')[0], // Use email prefix as student_id
+              name: existingUser.name,
+              email: emailLower,
+              class_id: null, // Will be assigned later by admin
+              status: 'active'
+            })
+            .select()
+            .maybeSingle()
+
+          if (studentError) {
+            console.error('❌ Error creating student record:', studentError.message)
+          } else if (newStudent) {
+            console.log('✅ Student record created:', newStudent.id)
+            finalStudentId = newStudent.id
+          }
+        } else {
+          // STEP 3: Create new student record (auto-registration)
+          console.log('📝 Creating new student record...')
+          let role: 'admin' | 'teacher' | 'student' = 'student'
+
+          // Determine role based on email
+          if (emailLower.includes('admin') || emailLower.includes('principal')) {
+            role = 'admin'
+          } else if (
+            emailLower.includes('teacher') ||
+            emailLower.includes('faculty') ||
+            emailLower.includes('staff')
+          ) {
+            role = 'teacher'
+          }
+
+          // Create user first
+          const { data: newUser, error: createError } = await supabase
+            .from('users')
+            .insert({
+            email: emailLower,
+            role: role,
+            name: emailLower.split('@')[0],
+          })
+          .select()
+          .maybeSingle()
+
+        if (createError) {
+          console.error('❌ Database error creating user:', createError.message)
+          console.error('❌ Error code:', createError.code)
+          console.error('❌ Error hint:', createError.hint)
+          console.error('❌ Error details:', createError.details)
+          
+          // If it's a unique constraint error, try to fetch the existing user
+          if (createError.code === '23505') {
+            console.log('⚠️ User already exists (unique constraint), fetching...')
+            const { data: existingUser, error: fetchError } = await supabase
+              .from('users')
+              .select('*')
+              .eq('email', emailLower)
+              .maybeSingle()
+            
+            if (fetchError) {
+              console.error('❌ Error fetching existing user:', fetchError.message)
+            }
+            
+            if (existingUser) {
+              console.log('✅ Found existing user:', existingUser.id)
+              finalStudentId = existingUser.id
+            }
+          }
+        } else if (newUser) {
+          console.log('✅ User created:', newUser.id)
+          finalStudentId = newUser.id
+        }
+      }
+    }
+
+    // If we still don't have a studentId, try one more time or create a fallback
+    if (!finalStudentId && email) {
+      console.log('⚠️ Creating fallback entry for email:', email)
+      // Try to use email as identifier temporarily
+      const { data: userByEmail } = await supabase
+        .from('users')
+        .select('*')
+        .eq('email', email.toLowerCase())
+        .maybeSingle()
+      
+      if (userByEmail) {
+        finalStudentId = userByEmail.id
+        console.log('✅ Found user by email:', finalStudentId)
+      }
+    }
+
+    if (!finalStudentId) {
+      console.error('❌ Failed to determine student ID after all attempts')
+      return NextResponse.json(
+        { error: 'Failed to create or find user account. Please contact your teacher.' },
+        { status: 500 }
+      )
+    }
+
+    // Verify session exists and is active
+    const { data: session, error: sessionError } = await supabase
+      .from('attendance_sessions')
+      .select('*')
+      .eq('id', sessionId)
+      .eq('session_code', sessionCode)
+      .eq('status', 'active')
+      .single()
+
+    if (sessionError || !session) {
+      return NextResponse.json(
+        { error: 'Invalid or inactive session' },
+        { status: 400 }
+      )
+    }
+
+    // Check if session has expired (time-based validation)
+    const now = new Date()
+    const expiresAt = new Date(session.expires_at)
+    
+    if (now > expiresAt) {
+      console.log(`❌ Session ${session.id} has expired - cannot mark attendance`)
+      
+      // Auto-update status to expired
+      await supabase
+        .from('attendance_sessions')
+        .update({ status: 'expired' })
+        .eq('id', session.id)
+      
+      return NextResponse.json(
+        { error: 'Session has expired. You cannot mark attendance for expired sessions.' },
+        { status: 410 } // 410 Gone
+      )
+    }
+    
+    const remainingSeconds = Math.floor((expiresAt.getTime() - now.getTime()) / 1000)
+    console.log(`✅ Session ${session.id} is valid - ${remainingSeconds} seconds remaining`)
+
+    // Check if student already marked attendance for this session
+    console.log('🔍 Checking existing attendance for student:', finalStudentId)
+    const { data: existingAttendance } = await supabase
+      .from('attendance_records')
+      .select('*')
+      .eq('student_id', finalStudentId)
+      .eq('session_id', sessionId)
+      .single()
+
+    if (existingAttendance) {
+      console.log('⚠️ Attendance already marked')
+      return NextResponse.json(
+        { error: 'Attendance already marked for this session' },
+        { status: 400 }
+      )
+    }
+
+    // Mark attendance
+    console.log('✅ Marking attendance for student:', finalStudentId)
+    const { data: attendance, error: attendanceError } = await supabase
+      .from('attendance_records')
+      .insert({
+        student_id: finalStudentId,
+        session_id: sessionId,
+        status: 'present',
+        marked_at: new Date().toISOString(),
+        otp_verified: true,
+      })
+      .select()
+      .single()
+
+    if (attendanceError) {
+      console.error('Error marking attendance:', attendanceError)
+      return NextResponse.json(
+        { error: 'Failed to mark attendance' },
+        { status: 500 }
+      )
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: 'Attendance marked successfully',
+      attendance,
+    })
+  } catch (error) {
+    console.error('Error in mark attendance:', error)
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    )
+  }
+}

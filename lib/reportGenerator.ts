@@ -1,0 +1,496 @@
+import jsPDF from 'jspdf'
+import autoTable from 'jspdf-autotable'
+
+interface AttendanceRecord {
+  students: {
+    student_id: string
+    name: string
+    email: string
+    classes?: {
+      class_name: string
+      section: string
+      year: number
+    }
+  }
+  status: string
+  marked_at: string
+  otp_verified: boolean
+}
+
+interface SessionInfo {
+  session_code: string
+  session_date: string
+  teacher: {
+    name: string
+    department: string
+  }
+  class: {
+    class_name: string
+    section: string
+    year: number
+  }
+  subject: {
+    subject_name: string
+    subject_code: string
+    credits: number
+    semester: number
+  }
+}
+
+interface Statistics {
+  total_records: number
+  total_present: number
+  total_absent: number
+  attendance_percentage: string
+}
+
+export function generatePDF(
+  session: SessionInfo,
+  records: AttendanceRecord[],
+  statistics: Statistics
+) {
+  const doc = new jsPDF()
+
+  // Header
+  doc.setFillColor(59, 130, 246) // Blue background
+  doc.rect(0, 0, 210, 40, 'F')
+  
+  doc.setTextColor(255, 255, 255) // White text
+  doc.setFontSize(22)
+  doc.setFont('helvetica', 'bold')
+  doc.text('KPRCAS Attendance Report', 105, 15, { align: 'center' })
+  
+  doc.setFontSize(12)
+  doc.setFont('helvetica', 'normal')
+  doc.text('Attendance Management System', 105, 25, { align: 'center' })
+  
+  // Session Information
+  doc.setTextColor(0, 0, 0)
+  doc.setFontSize(14)
+  doc.setFont('helvetica', 'bold')
+  doc.text('Session Details', 14, 50)
+  
+  doc.setFontSize(10)
+  doc.setFont('helvetica', 'normal')
+  let yPos = 58
+  
+  // Session details table
+  const sessionDetails = [
+    ['Session Code:', session.session_code],
+    ['Date:', new Date(session.session_date).toLocaleDateString('en-IN', { 
+      day: '2-digit', 
+      month: 'short', 
+      year: 'numeric' 
+    })],
+    ['Subject:', `${session.subject.subject_name} (${session.subject.subject_code})`],
+    ['Credits:', session.subject.credits?.toString() || 'N/A'],
+    ['Semester:', session.subject.semester?.toString() || 'N/A'],
+    ['Class:', `${session.class.class_name} ${session.class.section || ''} - Year ${session.class.year || 'N/A'}`],
+    ['Teacher:', session.teacher.name],
+    ['Department:', session.teacher.department || 'N/A'],
+  ]
+
+  autoTable(doc, {
+    startY: yPos,
+    head: [],
+    body: sessionDetails,
+    theme: 'plain',
+    styles: { fontSize: 10, cellPadding: 2 },
+    columnStyles: {
+      0: { fontStyle: 'bold', cellWidth: 40 },
+      1: { cellWidth: 140 }
+    },
+    margin: { left: 14 },
+  })
+
+  // Statistics
+  yPos = (doc as any).lastAutoTable.finalY + 10
+  doc.setFontSize(14)
+  doc.setFont('helvetica', 'bold')
+  doc.text('Attendance Statistics', 14, yPos)
+  
+  yPos += 8
+  const statsData = [
+    ['Total Students', statistics.total_records.toString()],
+    ['Present', statistics.total_present.toString()],
+    ['Absent', statistics.total_absent.toString()],
+    ['Attendance %', `${statistics.attendance_percentage}%`],
+  ]
+
+  autoTable(doc, {
+    startY: yPos,
+    head: [],
+    body: statsData,
+    theme: 'grid',
+    styles: { fontSize: 10, cellPadding: 3, halign: 'center' },
+    columnStyles: {
+      0: { fontStyle: 'bold', fillColor: [241, 245, 249] },
+      1: { fontStyle: 'bold' }
+    },
+    margin: { left: 14, right: 14 },
+  })
+
+  // Attendance Records
+  yPos = (doc as any).lastAutoTable.finalY + 10
+  doc.setFontSize(14)
+  doc.setFont('helvetica', 'bold')
+  doc.text('Attendance Records', 14, yPos)
+
+  // Prepare table data
+  const tableData = records.map((record, index) => {
+    const student = record.students
+    const time = new Date(record.marked_at).toLocaleTimeString('en-IN', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    })
+    
+    return [
+      (index + 1).toString(),
+      student.student_id || 'N/A',
+      student.name || 'Unknown',
+      student.email || 'N/A',
+      record.status === 'present' ? '✓ Present' : '✗ Absent',
+      time,
+    ]
+  })
+
+  autoTable(doc, {
+    startY: yPos + 5,
+    head: [['#', 'Student ID', 'Name', 'Email', 'Status', 'Time']],
+    body: tableData,
+    theme: 'striped',
+    headStyles: { 
+      fillColor: [59, 130, 246],
+      textColor: [255, 255, 255],
+      fontStyle: 'bold',
+      halign: 'center'
+    },
+    styles: { 
+      fontSize: 9, 
+      cellPadding: 3,
+      overflow: 'linebreak'
+    },
+    columnStyles: {
+      0: { cellWidth: 10, halign: 'center' },
+      1: { cellWidth: 25, halign: 'center' },
+      2: { cellWidth: 40 },
+      3: { cellWidth: 50 },
+      4: { cellWidth: 25, halign: 'center' },
+      5: { cellWidth: 25, halign: 'center' },
+    },
+    margin: { left: 14, right: 14 },
+  })
+
+  // Footer
+  const pageCount = doc.getNumberOfPages()
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i)
+    doc.setFontSize(8)
+    doc.setTextColor(100)
+    doc.text(
+      `Generated on ${new Date().toLocaleString('en-IN')}`,
+      14,
+      doc.internal.pageSize.height - 10
+    )
+    doc.text(
+      `Page ${i} of ${pageCount}`,
+      doc.internal.pageSize.width - 30,
+      doc.internal.pageSize.height - 10
+    )
+  }
+
+  // Save PDF
+  const fileName = `Attendance_${session.session_code}_${new Date().toISOString().split('T')[0]}.pdf`
+  doc.save(fileName)
+}
+
+export function generateCSV(
+  session: SessionInfo,
+  records: AttendanceRecord[],
+  statistics: Statistics
+) {
+  // CSV Header with session info
+  let csv = 'KPRCAS Attendance Report\n\n'
+  csv += 'Session Information\n'
+  csv += `Session Code,${session.session_code}\n`
+  csv += `Date,${new Date(session.session_date).toLocaleDateString('en-IN')}\n`
+  csv += `Subject,"${session.subject.subject_name} (${session.subject.subject_code})"\n`
+  csv += `Credits,${session.subject.credits || 'N/A'}\n`
+  csv += `Semester,${session.subject.semester || 'N/A'}\n`
+  csv += `Class,"${session.class.class_name} ${session.class.section || ''} - Year ${session.class.year || 'N/A'}"\n`
+  csv += `Teacher,${session.teacher.name}\n`
+  csv += `Department,${session.teacher.department || 'N/A'}\n\n`
+
+  // Statistics
+  csv += 'Attendance Statistics\n'
+  csv += `Total Students,${statistics.total_records}\n`
+  csv += `Present,${statistics.total_present}\n`
+  csv += `Absent,${statistics.total_absent}\n`
+  csv += `Attendance Percentage,${statistics.attendance_percentage}%\n\n`
+
+  // Attendance Records
+  csv += 'Attendance Records\n'
+  csv += 'S.No,Student ID,Name,Email,Status,Time Marked\n'
+
+  records.forEach((record, index) => {
+    const student = record.students
+    const time = new Date(record.marked_at).toLocaleTimeString('en-IN', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    })
+    
+    csv += `${index + 1},`
+    csv += `${student.student_id || 'N/A'},`
+    csv += `"${student.name || 'Unknown'}",`
+    csv += `${student.email || 'N/A'},`
+    csv += `${record.status === 'present' ? 'Present' : 'Absent'},`
+    csv += `${time}\n`
+  })
+
+  // Download CSV
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+  const link = document.createElement('a')
+  const url = URL.createObjectURL(blob)
+  
+  link.setAttribute('href', url)
+  link.setAttribute('download', `Attendance_${session.session_code}_${new Date().toISOString().split('T')[0]}.csv`)
+  link.style.visibility = 'hidden'
+  
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+}
+
+// ============================================================================
+// COMPREHENSIVE REPORT GENERATORS (Multiple Sessions)
+// ============================================================================
+
+interface ComprehensiveReportData {
+  sessions: Array<{
+    session_id: string
+    session_code: string
+    session_date: string
+    class: { class_name: string; section: string; year: number }
+    subject: { subject_name: string; subject_code: string }
+    statistics: {
+      total_students: number
+      present: number
+      absent: number
+      attendance_percentage: string
+    }
+    records: Array<{
+      students: { student_id: string; name: string; email: string }
+      status: string
+      marked_at: string | null
+    }>
+  }>
+  summary: {
+    total_sessions: number
+    total_students: number
+    total_present: number
+    total_absent: number
+    average_attendance: string
+  }
+  filters: {
+    classId?: string
+    subjectId?: string
+    startDate?: string
+    endDate?: string
+  }
+}
+
+export function generateComprehensivePDF(data: ComprehensiveReportData, teacherName: string) {
+  const doc = new jsPDF()
+  let yPos = 10
+
+  // Header
+  doc.setFillColor(59, 130, 246)
+  doc.rect(0, 0, 210, 45, 'F')
+  
+  doc.setTextColor(255, 255, 255)
+  doc.setFontSize(24)
+  doc.setFont('helvetica', 'bold')
+  doc.text('KPRCAS', 105, 15, { align: 'center' })
+  
+  doc.setFontSize(18)
+  doc.text('Comprehensive Attendance Report', 105, 25, { align: 'center' })
+  
+  doc.setFontSize(12)
+  doc.setFont('helvetica', 'normal')
+  doc.text(`Teacher: ${teacherName}`, 105, 35, { align: 'center' })
+
+  yPos = 55
+
+  // Report Info
+  doc.setTextColor(0, 0, 0)
+  doc.setFontSize(10)
+  doc.text(`Generated on: ${new Date().toLocaleString('en-IN')}`, 14, yPos)
+  yPos += 6
+  
+  if (data.filters.startDate || data.filters.endDate) {
+    const dateRange = `Period: ${data.filters.startDate || 'Start'} to ${data.filters.endDate || 'End'}`
+    doc.text(dateRange, 14, yPos)
+    yPos += 6
+  }
+
+  yPos += 5
+
+  // Overall Summary Section
+  doc.setFillColor(240, 240, 240)
+  doc.rect(14, yPos, 182, 8, 'F')
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(12)
+  doc.text('Overall Summary', 16, yPos + 5.5)
+  yPos += 12
+
+  const summaryData = [
+    ['Total Sessions', data.summary.total_sessions.toString()],
+    ['Total Students Enrolled', data.summary.total_students.toString()],
+    ['Total Present', data.summary.total_present.toString()],
+    ['Total Absent', data.summary.total_absent.toString()],
+    ['Average Attendance', `${data.summary.average_attendance}%`]
+  ]
+
+  autoTable(doc, {
+    startY: yPos,
+    head: [['Metric', 'Value']],
+    body: summaryData,
+    theme: 'striped',
+    headStyles: { fillColor: [59, 130, 246], fontSize: 10, fontStyle: 'bold' },
+    styles: { fontSize: 10, cellPadding: 4 },
+    columnStyles: {
+      0: { fontStyle: 'bold', cellWidth: 100 },
+      1: { halign: 'center', cellWidth: 82 }
+    }
+  })
+
+  yPos = (doc as any).lastAutoTable.finalY + 15
+
+  // Session-wise Breakdown
+  doc.setFont('helvetica', 'bold')
+  doc.setFontSize(12)
+  doc.text('Session-wise Breakdown', 14, yPos)
+  yPos += 8
+
+  const sessionTableData = data.sessions.map((session, index) => [
+    (index + 1).toString(),
+    new Date(session.session_date).toLocaleDateString('en-IN'),
+    session.session_code,
+    `${session.class.class_name} ${session.class.section}`,
+    session.subject.subject_name,
+    session.statistics.total_students.toString(),
+    session.statistics.present.toString(),
+    session.statistics.absent.toString(),
+    `${session.statistics.attendance_percentage}%`
+  ])
+
+  autoTable(doc, {
+    startY: yPos,
+    head: [['#', 'Date', 'Code', 'Class', 'Subject', 'Total', 'Present', 'Absent', '%']],
+    body: sessionTableData,
+    theme: 'grid',
+    headStyles: { fillColor: [59, 130, 246], fontSize: 9, fontStyle: 'bold' },
+    styles: { fontSize: 8, cellPadding: 2 },
+    columnStyles: {
+      0: { cellWidth: 10, halign: 'center' },
+      1: { cellWidth: 25 },
+      2: { cellWidth: 22 },
+      3: { cellWidth: 30 },
+      4: { cellWidth: 35 },
+      5: { cellWidth: 15, halign: 'center' },
+      6: { cellWidth: 18, halign: 'center' },
+      7: { cellWidth: 18, halign: 'center' },
+      8: { cellWidth: 15, halign: 'center' }
+    },
+    didDrawPage: (data) => {
+      // Footer
+      const pageCount = (doc as any).internal.getNumberOfPages()
+      doc.setFontSize(8)
+      doc.setTextColor(100)
+      doc.text(
+        `Page ${(doc as any).internal.getCurrentPageInfo().pageNumber} of ${pageCount}`,
+        105,
+        doc.internal.pageSize.height - 10,
+        { align: 'center' }
+      )
+    }
+  })
+
+  // Save PDF
+  const fileName = `Comprehensive_Report_${new Date().toISOString().split('T')[0]}.pdf`
+  doc.save(fileName)
+}
+
+export function generateComprehensiveCSV(data: ComprehensiveReportData, teacherName: string) {
+  let csv = 'KPRCAS Comprehensive Attendance Report\n\n'
+  
+  csv += `Teacher,${teacherName}\n`
+  csv += `Generated On,${new Date().toLocaleString('en-IN')}\n`
+  
+  if (data.filters.startDate || data.filters.endDate) {
+    csv += `Period,${data.filters.startDate || 'Start'} to ${data.filters.endDate || 'End'}\n`
+  }
+  
+  csv += '\n'
+  csv += 'OVERALL SUMMARY\n'
+  csv += 'Metric,Value\n'
+  csv += `Total Sessions,${data.summary.total_sessions}\n`
+  csv += `Total Students,${data.summary.total_students}\n`
+  csv += `Total Present,${data.summary.total_present}\n`
+  csv += `Total Absent,${data.summary.total_absent}\n`
+  csv += `Average Attendance,${data.summary.average_attendance}%\n`
+  
+  csv += '\n'
+  csv += 'SESSION-WISE BREAKDOWN\n'
+  csv += 'S.No,Date,Session Code,Class,Subject,Total Students,Present,Absent,Attendance %\n'
+  
+  data.sessions.forEach((session, index) => {
+    csv += `${index + 1},`
+    csv += `${new Date(session.session_date).toLocaleDateString('en-IN')},`
+    csv += `${session.session_code},`
+    csv += `"${session.class.class_name} ${session.class.section}",`
+    csv += `"${session.subject.subject_name}",`
+    csv += `${session.statistics.total_students},`
+    csv += `${session.statistics.present},`
+    csv += `${session.statistics.absent},`
+    csv += `${session.statistics.attendance_percentage}%\n`
+  })
+  
+  // Detailed student-wise data for each session
+  csv += '\n\n'
+  csv += 'DETAILED ATTENDANCE RECORDS\n\n'
+  
+  data.sessions.forEach((session, sessionIndex) => {
+    csv += `\nSession ${sessionIndex + 1}: ${session.session_code} - ${session.class.class_name} ${session.class.section} - ${session.subject.subject_name}\n`
+    csv += `Date: ${new Date(session.session_date).toLocaleDateString('en-IN')}\n`
+    csv += 'S.No,Student ID,Name,Email,Status,Time\n'
+    
+    session.records.forEach((record, index) => {
+      const time = record.marked_at 
+        ? new Date(record.marked_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })
+        : '-'
+      
+      csv += `${index + 1},`
+      csv += `${record.students.student_id},`
+      csv += `"${record.students.name}",`
+      csv += `${record.students.email},`
+      csv += `${record.status === 'present' ? 'Present' : 'Absent'},`
+      csv += `${time}\n`
+    })
+  })
+
+  // Download CSV
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+  const link = document.createElement('a')
+  const url = URL.createObjectURL(blob)
+  
+  link.setAttribute('href', url)
+  link.setAttribute('download', `Comprehensive_Report_${new Date().toISOString().split('T')[0]}.csv`)
+  link.style.visibility = 'hidden'
+  
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+}
