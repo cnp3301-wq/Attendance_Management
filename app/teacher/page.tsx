@@ -105,6 +105,7 @@ export default function TeacherDashboard() {
   const [reportData, setReportData] = useState<any>(null)
   const [loadingReport, setLoadingReport] = useState(false)
   const [isAuthorized, setIsAuthorized] = useState(false)
+  const [error, setError] = useState("")
 
   useEffect(() => {
     // Check authentication immediately
