@@ -64,20 +64,12 @@ export default function AdminDashboard() {
       console.log("🔍 Debug - Sample users:", allUsers)
       if (debugError) console.error("Debug error:", debugError)
 
-      // Try multiple approaches to find students
-      // First try with role column
-      const { data: studentsByRole, count: studentCountByRole } = await supabase
-        .from("users")
+      // Fetch students from the students table (not users table)
+      const { data: studentsData, count: studentCount, error: studentsError } = await supabase
+        .from("students")
         .select("*", { count: "exact" })
-        .eq("role", "student")
 
-      // Then try with user_type column  
-      const { data: studentsByUserType, count: studentCountByUserType } = await supabase
-        .from("users")
-        .select("*", { count: "exact" })
-        .eq("user_type", "student")
-
-      // Try for teachers too
+      // Fetch teachers from users table
       const { data: teachersByRole, count: teacherCountByRole } = await supabase
         .from("users")
         .select("*", { count: "exact" })
@@ -88,18 +80,17 @@ export default function AdminDashboard() {
         .select("*", { count: "exact" })
         .eq("user_type", "teacher")
 
-      // Combine counts (avoiding duplicates by using Set if needed)
-      const totalStudents = (studentCountByRole || 0) + (studentCountByUserType || 0)
+      const totalStudents = studentCount || 0
       const totalTeachers = (teacherCountByRole || 0) + (teacherCountByUserType || 0)
 
       console.log("📊 Dashboard Stats:", {
         students: totalStudents,
         teachers: totalTeachers,
-        studentsByRole: studentCountByRole,
-        studentsByUserType: studentCountByUserType,
+        studentsFromStudentsTable: studentCount,
+        studentsError,
         teachersByRole: teacherCountByRole,
         teachersByUserType: teacherCountByUserType,
-        sampleStudents: [...(studentsByRole || []), ...(studentsByUserType || [])].slice(0, 3),
+        sampleStudents: (studentsData || []).slice(0, 3),
         sampleTeachers: [...(teachersByRole || []), ...(teachersByUserType || [])].slice(0, 3)
       })
 

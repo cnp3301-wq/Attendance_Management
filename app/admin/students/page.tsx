@@ -69,40 +69,36 @@ export default function StudentsPage() {
     try {
       setLoading(true)
       
-      // Try both role and user_type columns separately
-      const { data: studentsByRole, error: roleError } = await supabase
-        .from("users")
-        .select("*")
-        .eq("role", "student")
+      // Fetch students from the students table (same as admin manage panel)
+      const { data: studentsData, error: studentsError } = await supabase
+        .from("students")
+        .select(`
+          *,
+          classes (
+            class_name
+          )
+        `)
         .order("name", { ascending: true })
 
-      const { data: studentsByUserType, error: userTypeError } = await supabase
-        .from("users")
-        .select("*")
-        .eq("user_type", "student")
-        .order("name", { ascending: true })
+      if (studentsError) {
+        console.error("Error fetching students:", studentsError)
+      } else {
+        console.log("👥 Fetched students from students table:", studentsData?.length || 0, "students")
+        console.log("📋 Sample students:", studentsData?.slice(0, 3))
+        
+        // Transform the data to match expected format
+        const formattedStudents = (studentsData || []).map(student => ({
+          id: student.student_id,
+          email: student.email,
+          name: student.name,
+          class_name: student.classes?.class_name,
+          section: student.section,
+          created_at: student.created_at
+        }))
 
-      if (roleError) console.error("Error fetching students by role:", roleError)
-      if (userTypeError) console.error("Error fetching students by user_type:", userTypeError)
-
-      // Combine results and remove duplicates
-      const allStudents = [
-        ...(studentsByRole || []),
-        ...(studentsByUserType || [])
-      ]
-      
-      // Remove duplicates based on email
-      const uniqueStudents = allStudents.filter((student, index, self) =>
-        index === self.findIndex((s) => s.email === student.email)
-      )
-
-      console.log("👥 Fetched students:", uniqueStudents.length, "students")
-      console.log("📋 Sample students:", uniqueStudents.slice(0, 3))
-      console.log("🔍 Students by role:", studentsByRole?.length || 0)
-      console.log("🔍 Students by user_type:", studentsByUserType?.length || 0)
-
-      setStudents(uniqueStudents)
-      setFilteredStudents(uniqueStudents)
+        setStudents(formattedStudents)
+        setFilteredStudents(formattedStudents)
+      }
     } catch (error) {
       console.error("Error fetching students:", error)
     } finally {
