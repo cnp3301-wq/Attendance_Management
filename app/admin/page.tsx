@@ -113,10 +113,32 @@ export default function AdminDashboard() {
               Manage your attendance system and view analytics
             </p>
           </div>
-          <Button onClick={fetchDashboardData} disabled={loading}>
-            <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-            Refresh
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={fetchDashboardData} disabled={loading}>
+              <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={async () => {
+                try {
+                  const response = await fetch('/api/debug/create-test-student', { method: 'POST' })
+                  const data = await response.json()
+                  if (data.success) {
+                    alert('Test student created!')
+                    fetchDashboardData()
+                  } else {
+                    alert('Error: ' + data.error)
+                  }
+                } catch (error) {
+                  alert('Failed to create test student')
+                  console.error(error)
+                }
+              }}
+            >
+              Create Test Student
+            </Button>
+          </div>
         </div>
 
         {/* Stats Grid */}
