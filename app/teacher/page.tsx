@@ -471,11 +471,11 @@ export default function TeacherDashboard() {
     <div className="min-h-screen bg-muted/40">
       <DashboardNav userName={user.name} userEmail={user.email} userRole={user.role} />
 
-      <main className="container mx-auto p-6 space-y-6">
+      <main className="container mx-auto p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6">
         {/* Header */}
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight">Teacher Dashboard</h2>
-          <p className="text-muted-foreground">
+        <div className="px-2 sm:px-0">
+          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">Teacher Dashboard</h2>
+          <p className="text-sm sm:text-base text-muted-foreground mt-1">
             Manage your classes and track student attendance
           </p>
         </div>
@@ -484,25 +484,25 @@ export default function TeacherDashboard() {
         {assignments.length > 0 && (
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <GraduationCap className="h-5 w-5" />
+              <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                <GraduationCap className="h-4 w-4 sm:h-5 sm:w-5" />
                 Your Assigned Classes & Subjects
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-xs sm:text-sm">
                 Classes and subjects assigned to you by admin
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {assignments.map((assignment) => (
                   <div
                     key={assignment.id}
-                    className="p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+                    className="p-3 sm:p-4 border rounded-lg hover:bg-muted/50 transition-colors"
                   >
-                    <div className="font-medium text-sm text-primary">
+                    <div className="font-medium text-xs sm:text-sm text-primary">
                       {assignment.class_name} {assignment.section}
                     </div>
-                    <div className="text-sm text-muted-foreground mt-1">
+                    <div className="text-xs sm:text-sm text-muted-foreground mt-1">
                       {assignment.subject_code} - {assignment.subject_name}
                     </div>
                   </div>
@@ -513,7 +513,7 @@ export default function TeacherDashboard() {
         )}
 
         {/* Stats Grid */}
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
           <StatsCard
             title="Today's Present"
             value={stats.todayPresent}
@@ -535,12 +535,12 @@ export default function TeacherDashboard() {
         </div>
 
         {/* Main Content */}
-        <div className="grid gap-4 lg:grid-cols-2">
+        <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
           {/* Session Control */}
           <Card>
             <CardHeader>
-              <CardTitle>Attendance Session</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-lg sm:text-xl">Attendance Session</CardTitle>
+              <CardDescription className="text-xs sm:text-sm">
                 {activeSession
                   ? "Session is active - Show QR code to students"
                   : "Start a new attendance session"}
@@ -550,19 +550,19 @@ export default function TeacherDashboard() {
               {!activeSession ? (
                 <>
                   {assignments.length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground">
-                      <p className="text-lg font-medium">No Assignments Found</p>
-                      <p className="text-sm mt-2">
+                    <div className="text-center py-6 sm:py-8 text-muted-foreground">
+                      <p className="text-base sm:text-lg font-medium">No Assignments Found</p>
+                      <p className="text-xs sm:text-sm mt-2 px-4">
                         Contact admin to assign classes and subjects to you.
                       </p>
                     </div>
                   ) : (
                     <>
                       <div className="space-y-2">
-                        <Label htmlFor="class">Select Class</Label>
+                        <Label htmlFor="class" className="text-sm sm:text-base">Select Class</Label>
                         <select
                           id="class"
-                          className="w-full px-3 py-2 border rounded-md"
+                          className="w-full px-3 py-2 text-sm sm:text-base border rounded-md"
                           value={selectedClassId}
                           onChange={(e) => setSelectedClassId(e.target.value)}
                         >
@@ -580,10 +580,10 @@ export default function TeacherDashboard() {
                       </div>
                       
                       <div className="space-y-2">
-                        <Label htmlFor="subject">Select Subject</Label>
+                        <Label htmlFor="subject" className="text-sm sm:text-base">Select Subject</Label>
                         <select
                           id="subject"
-                          className="w-full px-3 py-2 border rounded-md"
+                          className="w-full px-3 py-2 text-sm sm:text-base border rounded-md"
                           value={selectedSubjectId}
                           onChange={(e) => setSelectedSubjectId(e.target.value)}
                           disabled={!selectedClassId}
@@ -602,12 +602,17 @@ export default function TeacherDashboard() {
                       </div>
 
                       <Button
-                        className="w-full"
+                        className="w-full text-sm sm:text-base"
                         onClick={handleStartSession}
                         disabled={loading || !selectedClassId || !selectedSubjectId}
                       >
                         <QrCode className="mr-2 h-4 w-4" />
-                        {selectedClassId && selectedSubjectId ? "Generate QR Code & Start Session" : "Select Class & Subject First"}
+                        <span className="hidden sm:inline">
+                          {selectedClassId && selectedSubjectId ? "Generate QR Code & Start Session" : "Select Class & Subject First"}
+                        </span>
+                        <span className="sm:hidden">
+                          {selectedClassId && selectedSubjectId ? "Start Session" : "Select Class & Subject"}
+                        </span>
                       </Button>
                     </>
                   )}
@@ -615,18 +620,18 @@ export default function TeacherDashboard() {
               ) : (
                 <>
                   <div className="space-y-2">
-                    <div className="text-sm font-medium">
+                    <div className="text-xs sm:text-sm font-medium">
                       Class: {activeSession.classes ? `${activeSession.classes.class_name} ${activeSession.classes.section}` : 'N/A'}
                     </div>
-                    <div className="text-sm font-medium">
+                    <div className="text-xs sm:text-sm font-medium">
                       Subject: {activeSession.subjects?.subject_name || 'N/A'}
                     </div>
-                    <div className="text-sm text-muted-foreground">
+                    <div className="text-xs sm:text-sm text-muted-foreground">
                       Session Code: {activeSession.session_code}
                     </div>
                   </div>
                   <Button
-                    className="w-full"
+                    className="w-full text-sm sm:text-base"
                     variant="destructive"
                     onClick={handleEndSession}
                     disabled={loading}
@@ -641,26 +646,32 @@ export default function TeacherDashboard() {
           {/* QR Code Display */}
           <Card>
             <CardHeader>
-              <CardTitle>QR Code</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-lg sm:text-xl">QR Code</CardTitle>
+              <CardDescription className="text-xs sm:text-sm">
                 Students scan this code to mark attendance
               </CardDescription>
             </CardHeader>
             <CardContent>
               {activeSession ? (
                 <div className="flex flex-col items-center space-y-4">
-                  <div className="bg-white p-4 rounded-lg">
-                    <QRCode value={qrData} size={256} />
+                  <div className="bg-white p-3 sm:p-4 rounded-lg w-full max-w-[280px] sm:max-w-none mx-auto">
+                    <div className="w-full aspect-square max-w-[256px] mx-auto">
+                      <QRCode 
+                        value={qrData} 
+                        size={256}
+                        style={{ height: "auto", maxWidth: "100%", width: "100%" }}
+                      />
+                    </div>
                   </div>
-                  <p className="text-sm text-center text-muted-foreground">
+                  <p className="text-xs sm:text-sm text-center text-muted-foreground px-4">
                     Ask students to scan this QR code with their mobile devices
                   </p>
                 </div>
               ) : (
-                <div className="flex items-center justify-center h-64 text-muted-foreground">
-                  <div className="text-center">
-                    <QrCode className="mx-auto h-12 w-12 mb-2 opacity-50" />
-                    <p>Start a session to generate QR code</p>
+                <div className="flex items-center justify-center h-48 sm:h-64 text-muted-foreground">
+                  <div className="text-center px-4">
+                    <QrCode className="mx-auto h-10 w-10 sm:h-12 sm:w-12 mb-2 opacity-50" />
+                    <p className="text-xs sm:text-sm">Start a session to generate QR code</p>
                   </div>
                 </div>
               )}
@@ -673,8 +684,8 @@ export default function TeacherDashboard() {
         {/* View Students Section */}
         <Card>
           <CardHeader>
-            <CardTitle>View Students</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-lg sm:text-xl">View Students</CardTitle>
+            <CardDescription className="text-xs sm:text-sm">
               Select a class to view all students or see individual student details
             </CardDescription>
           </CardHeader>
@@ -682,12 +693,12 @@ export default function TeacherDashboard() {
             <div className="space-y-4">
               {/* Class Selector */}
               <div className="space-y-2">
-                <Label htmlFor="view-class">Select Class</Label>
+                <Label htmlFor="view-class" className="text-sm sm:text-base">Select Class</Label>
                 <select
                   id="view-class"
                   value={viewStudentsClassId}
                   onChange={(e) => handleViewStudentsClassChange(e.target.value)}
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm sm:text-base ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 >
                   <option value="">-- Choose a class --</option>
                   {Array.from(
@@ -705,21 +716,21 @@ export default function TeacherDashboard() {
 
               {/* Loading State */}
               {loadingStudents && (
-                <div className="text-center py-4 text-muted-foreground">
+                <div className="text-center py-4 text-muted-foreground text-sm">
                   Loading students...
                 </div>
               )}
 
               {/* No Class Selected */}
               {!viewStudentsClassId && !loadingStudents && (
-                <div className="text-center py-8 text-muted-foreground">
+                <div className="text-center py-6 sm:py-8 text-muted-foreground text-xs sm:text-sm">
                   Select a class to view students
                 </div>
               )}
 
               {/* No Students Found */}
               {viewStudentsClassId && !loadingStudents && students.length === 0 && (
-                <div className="text-center py-8 text-muted-foreground">
+                <div className="text-center py-6 sm:py-8 text-muted-foreground text-xs sm:text-sm">
                   No students found in this class
                 </div>
               )}
@@ -727,8 +738,8 @@ export default function TeacherDashboard() {
               {/* Students List */}
               {viewStudentsClassId && !loadingStudents && students.length > 0 && (
                 <>
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="text-sm font-medium">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-3">
+                    <div className="text-xs sm:text-sm font-medium">
                       Total Students: {students.length}
                     </div>
                     {selectedStudent && (
@@ -736,6 +747,7 @@ export default function TeacherDashboard() {
                         variant="outline"
                         size="sm"
                         onClick={() => setSelectedStudent(null)}
+                        className="text-xs sm:text-sm"
                       >
                         Back to List
                       </Button>
@@ -743,32 +755,33 @@ export default function TeacherDashboard() {
                   </div>
 
                   {!selectedStudent ? (
-                    // Full Student List
-                    <div className="rounded-md border">
-                      <table className="w-full">
+                    // Full Student List - Mobile responsive table
+                    <div className="rounded-md border overflow-x-auto">
+                      <table className="w-full min-w-[500px]">
                         <thead>
                           <tr className="border-b bg-muted/50">
-                            <th className="p-3 text-left text-sm font-medium">Roll No</th>
-                            <th className="p-3 text-left text-sm font-medium">Name</th>
-                            <th className="p-3 text-left text-sm font-medium">Email</th>
-                            <th className="p-3 text-left text-sm font-medium">Actions</th>
+                            <th className="p-2 sm:p-3 text-left text-xs sm:text-sm font-medium">Roll No</th>
+                            <th className="p-2 sm:p-3 text-left text-xs sm:text-sm font-medium">Name</th>
+                            <th className="p-2 sm:p-3 text-left text-xs sm:text-sm font-medium hidden sm:table-cell">Email</th>
+                            <th className="p-2 sm:p-3 text-left text-xs sm:text-sm font-medium">Actions</th>
                           </tr>
                         </thead>
                         <tbody>
                           {students.map((student) => (
                             <tr key={student.id} className="border-b hover:bg-muted/50">
-                              <td className="p-3 text-sm font-medium">{student.roll_number}</td>
-                              <td className="p-3 text-sm">{student.name}</td>
-                              <td className="p-3 text-sm text-muted-foreground">
+                              <td className="p-2 sm:p-3 text-xs sm:text-sm font-medium">{student.roll_number}</td>
+                              <td className="p-2 sm:p-3 text-xs sm:text-sm">{student.name}</td>
+                              <td className="p-2 sm:p-3 text-xs sm:text-sm text-muted-foreground hidden sm:table-cell">
                                 {student.email}
                               </td>
-                              <td className="p-3 text-sm">
+                              <td className="p-2 sm:p-3 text-xs sm:text-sm">
                                 <Button
                                   variant="ghost"
                                   size="sm"
                                   onClick={() => setSelectedStudent(student)}
+                                  className="text-xs h-8"
                                 >
-                                  View Details
+                                  View
                                 </Button>
                               </td>
                             </tr>
@@ -780,47 +793,47 @@ export default function TeacherDashboard() {
                     // Individual Student Details
                     <Card className="border-2">
                       <CardHeader>
-                        <CardTitle className="text-lg">Student Details</CardTitle>
+                        <CardTitle className="text-base sm:text-lg">Student Details</CardTitle>
                       </CardHeader>
                       <CardContent>
                         <div className="space-y-4">
-                          <div className="grid grid-cols-2 gap-4">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
-                              <Label className="text-muted-foreground">Roll Number</Label>
-                              <div className="text-lg font-semibold">
+                              <Label className="text-xs sm:text-sm text-muted-foreground">Roll Number</Label>
+                              <div className="text-base sm:text-lg font-semibold">
                                 {selectedStudent.roll_number}
                               </div>
                             </div>
                             <div>
-                              <Label className="text-muted-foreground">Name</Label>
-                              <div className="text-lg font-semibold">
+                              <Label className="text-xs sm:text-sm text-muted-foreground">Name</Label>
+                              <div className="text-base sm:text-lg font-semibold">
                                 {selectedStudent.name}
                               </div>
                             </div>
                             <div>
-                              <Label className="text-muted-foreground">Email</Label>
-                              <div className="text-sm">
+                              <Label className="text-xs sm:text-sm text-muted-foreground">Email</Label>
+                              <div className="text-xs sm:text-sm break-all">
                                 {selectedStudent.email}
                               </div>
                             </div>
                             <div>
-                              <Label className="text-muted-foreground">Phone</Label>
-                              <div className="text-sm">
+                              <Label className="text-xs sm:text-sm text-muted-foreground">Phone</Label>
+                              <div className="text-xs sm:text-sm">
                                 {selectedStudent.phone || "Not provided"}
                               </div>
                             </div>
                             {selectedStudent.department && (
                               <div>
-                                <Label className="text-muted-foreground">Department</Label>
-                                <div className="text-sm">
+                                <Label className="text-xs sm:text-sm text-muted-foreground">Department</Label>
+                                <div className="text-xs sm:text-sm">
                                   {selectedStudent.department}
                                 </div>
                               </div>
                             )}
                             {selectedStudent.year && (
                               <div>
-                                <Label className="text-muted-foreground">Year</Label>
-                                <div className="text-sm">
+                                <Label className="text-xs sm:text-sm text-muted-foreground">Year</Label>
+                                <div className="text-xs sm:text-sm">
                                   {selectedStudent.year}
                                 </div>
                               </div>
@@ -839,18 +852,18 @@ export default function TeacherDashboard() {
         {/* Generate Reports Section */}
         <Card>
           <CardHeader>
-            <CardTitle>📊 Generate Comprehensive Reports</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-lg sm:text-xl">📊 Generate Comprehensive Reports</CardTitle>
+            <CardDescription className="text-xs sm:text-sm">
               Generate attendance reports for your classes with filters
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               {/* Filters */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {/* Class Filter */}
                 <div className="space-y-2">
-                  <Label htmlFor="report-class">Filter by Class (Optional)</Label>
+                  <Label htmlFor="report-class" className="text-xs sm:text-sm">Filter by Class (Optional)</Label>
                   <select
                     id="report-class"
                     value={reportClassId}
@@ -858,7 +871,7 @@ export default function TeacherDashboard() {
                       setReportClassId(e.target.value)
                       setReportSubjectId("") // Reset subject when class changes
                     }}
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-xs sm:text-sm"
                   >
                     <option value="">All Classes</option>
                     {Array.from(new Set(assignments.map((a) => a.class_id))).map((classId) => {
@@ -874,12 +887,12 @@ export default function TeacherDashboard() {
 
                 {/* Subject Filter */}
                 <div className="space-y-2">
-                  <Label htmlFor="report-subject">Filter by Subject (Optional)</Label>
+                  <Label htmlFor="report-subject" className="text-xs sm:text-sm">Filter by Subject (Optional)</Label>
                   <select
                     id="report-subject"
                     value={reportSubjectId}
                     onChange={(e) => setReportSubjectId(e.target.value)}
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-xs sm:text-sm"
                     disabled={!reportClassId}
                   >
                     <option value="">All Subjects</option>
@@ -896,23 +909,25 @@ export default function TeacherDashboard() {
 
                 {/* Start Date Filter */}
                 <div className="space-y-2">
-                  <Label htmlFor="report-start">Start Date (Optional)</Label>
+                  <Label htmlFor="report-start" className="text-xs sm:text-sm">Start Date (Optional)</Label>
                   <Input
                     id="report-start"
                     type="date"
                     value={reportStartDate}
                     onChange={(e) => setReportStartDate(e.target.value)}
+                    className="text-xs sm:text-sm"
                   />
                 </div>
 
                 {/* End Date Filter */}
                 <div className="space-y-2">
-                  <Label htmlFor="report-end">End Date (Optional)</Label>
+                  <Label htmlFor="report-end" className="text-xs sm:text-sm">End Date (Optional)</Label>
                   <Input
                     id="report-end"
                     type="date"
                     value={reportEndDate}
                     onChange={(e) => setReportEndDate(e.target.value)}
+                    className="text-xs sm:text-sm"
                   />
                 </div>
               </div>
@@ -921,7 +936,7 @@ export default function TeacherDashboard() {
               <Button
                 onClick={handleGenerateReport}
                 disabled={loadingReport}
-                className="w-full"
+                className="w-full text-sm sm:text-base"
               >
                 {loadingReport ? 'Generating...' : '🔍 Generate Report'}
               </Button>
@@ -930,84 +945,84 @@ export default function TeacherDashboard() {
               {reportData && (
                 <div className="mt-6 space-y-4 border-t pt-4">
                   {/* Summary Cards */}
-                  <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 sm:gap-3">
                     <Card className="bg-blue-50">
-                      <CardContent className="p-4 text-center">
-                        <p className="text-2xl font-bold text-blue-600">{reportData.summary.total_sessions}</p>
-                        <p className="text-xs text-muted-foreground">Total Sessions</p>
+                      <CardContent className="p-3 sm:p-4 text-center">
+                        <p className="text-xl sm:text-2xl font-bold text-blue-600">{reportData.summary.total_sessions}</p>
+                        <p className="text-[10px] sm:text-xs text-muted-foreground">Total Sessions</p>
                       </CardContent>
                     </Card>
                     <Card className="bg-purple-50">
-                      <CardContent className="p-4 text-center">
-                        <p className="text-2xl font-bold text-purple-600">{reportData.summary.total_students}</p>
-                        <p className="text-xs text-muted-foreground">Total Students</p>
+                      <CardContent className="p-3 sm:p-4 text-center">
+                        <p className="text-xl sm:text-2xl font-bold text-purple-600">{reportData.summary.total_students}</p>
+                        <p className="text-[10px] sm:text-xs text-muted-foreground">Total Students</p>
                       </CardContent>
                     </Card>
                     <Card className="bg-green-50">
-                      <CardContent className="p-4 text-center">
-                        <p className="text-2xl font-bold text-green-600">{reportData.summary.total_present}</p>
-                        <p className="text-xs text-muted-foreground">Total Present</p>
+                      <CardContent className="p-3 sm:p-4 text-center">
+                        <p className="text-xl sm:text-2xl font-bold text-green-600">{reportData.summary.total_present}</p>
+                        <p className="text-[10px] sm:text-xs text-muted-foreground">Total Present</p>
                       </CardContent>
                     </Card>
                     <Card className="bg-red-50">
-                      <CardContent className="p-4 text-center">
-                        <p className="text-2xl font-bold text-red-600">{reportData.summary.total_absent}</p>
-                        <p className="text-xs text-muted-foreground">Total Absent</p>
+                      <CardContent className="p-3 sm:p-4 text-center">
+                        <p className="text-xl sm:text-2xl font-bold text-red-600">{reportData.summary.total_absent}</p>
+                        <p className="text-[10px] sm:text-xs text-muted-foreground">Total Absent</p>
                       </CardContent>
                     </Card>
-                    <Card className="bg-indigo-50">
-                      <CardContent className="p-4 text-center">
-                        <p className="text-2xl font-bold text-indigo-600">{reportData.summary.average_attendance}%</p>
-                        <p className="text-xs text-muted-foreground">Avg Attendance</p>
+                    <Card className="bg-indigo-50 col-span-2 sm:col-span-1">
+                      <CardContent className="p-3 sm:p-4 text-center">
+                        <p className="text-xl sm:text-2xl font-bold text-indigo-600">{reportData.summary.average_attendance}%</p>
+                        <p className="text-[10px] sm:text-xs text-muted-foreground">Avg Attendance</p>
                       </CardContent>
                     </Card>
                   </div>
 
                   {/* Download Buttons */}
-                  <div className="flex gap-3">
+                  <div className="flex flex-col sm:flex-row gap-3">
                     <Button
                       onClick={handleDownloadComprehensivePDF}
-                      className="flex-1 bg-red-600 hover:bg-red-700"
+                      className="flex-1 bg-red-600 hover:bg-red-700 text-xs sm:text-sm"
                     >
-                      📄 Download PDF Report
+                      📄 <span className="hidden sm:inline ml-1">Download PDF Report</span><span className="sm:hidden ml-1">PDF Report</span>
                     </Button>
                     <Button
                       onClick={handleDownloadComprehensiveCSV}
-                      className="flex-1 bg-green-600 hover:bg-green-700"
+                      className="flex-1 bg-green-600 hover:bg-green-700 text-xs sm:text-sm"
                     >
-                      📊 Download CSV Report
+                      📊 <span className="hidden sm:inline ml-1">Download CSV Report</span><span className="sm:hidden ml-1">CSV Report</span>
                     </Button>
                   </div>
 
                   {/* Session List */}
                   <div className="border rounded-lg overflow-hidden">
-                    <div className="bg-muted px-4 py-2">
-                      <p className="font-semibold">Sessions Included ({reportData.sessions.length})</p>
+                    <div className="bg-muted px-3 sm:px-4 py-2">
+                      <p className="font-semibold text-xs sm:text-sm">Sessions Included ({reportData.sessions.length})</p>
                     </div>
-                    <div className="max-h-64 overflow-y-auto">
-                      <table className="w-full">
+                    <div className="max-h-64 overflow-y-auto overflow-x-auto">
+                      <table className="w-full min-w-[600px]">
                         <thead className="bg-muted/50 sticky top-0">
                           <tr>
-                            <th className="p-2 text-left text-xs">#</th>
-                            <th className="p-2 text-left text-xs">Date</th>
-                            <th className="p-2 text-left text-xs">Code</th>
-                            <th className="p-2 text-left text-xs">Class</th>
-                            <th className="p-2 text-left text-xs">Subject</th>
-                            <th className="p-2 text-center text-xs">Present</th>
-                            <th className="p-2 text-center text-xs">Attendance %</th>
+                            <th className="p-2 text-left text-[10px] sm:text-xs">#</th>
+                            <th className="p-2 text-left text-[10px] sm:text-xs">Date</th>
+                            <th className="p-2 text-left text-[10px] sm:text-xs">Code</th>
+                            <th className="p-2 text-left text-[10px] sm:text-xs">Class</th>
+                            <th className="p-2 text-left text-[10px] sm:text-xs">Subject</th>
+                            <th className="p-2 text-center text-[10px] sm:text-xs">Present</th>
+                            <th className="p-2 text-center text-[10px] sm:text-xs">Attendance %</th>
                           </tr>
                         </thead>
                         <tbody>
                           {reportData.sessions.map((session: any, index: number) => (
                             <tr key={session.session_id} className="border-t hover:bg-muted/30">
-                              <td className="p-2 text-xs">{index + 1}</td>
-                              <td className="p-2 text-xs">{new Date(session.session_date).toLocaleDateString()}</td>
-                              <td className="p-2 text-xs font-mono">{session.session_code}</td>
-                              <td className="p-2 text-xs">{session.class.class_name} {session.class.section}</td>
-                              <td className="p-2 text-xs">{session.subject.subject_name}</td>
-                              <td className="p-2 text-center text-xs">{session.statistics.present}/{session.statistics.total_students}</td>
-                              <td className="p-2 text-center text-xs">
-                                <span className={`px-2 py-1 rounded-full ${
+                              <td className="p-2 text-[10px] sm:text-xs">{index + 1}</td>
+                              <td className="p-2 text-[10px] sm:text-xs whitespace-nowrap">{new Date(session.session_date).toLocaleDateString()}</td>
+                              <td className="p-2 text-[10px] sm:text-xs font-mono">{session.session_code}</td>
+                              <td className="p-2 text-[10px] sm:text-xs">{session.class.class_name} {session.class.section}</td>
+                              <td className="p-2 text-[10px] sm:text-xs">{session.subject.subject_name}</td>
+                              <td className="p-2 text-center text-[10px] sm:text-xs">{session.statistics.present}/{session.statistics.total_students}</td>
+                              <td className="p-2 text-center text-[10px] sm:text-xs">
+                                <span className={`px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full ${
                                   parseFloat(session.statistics.attendance_percentage) >= 75 
                                     ? 'bg-green-100 text-green-800' 
                                     : parseFloat(session.statistics.attendance_percentage) >= 50
